@@ -1,0 +1,2 @@
+# ccwc
+ This project is a hands-on challenge to create a custom version of the Unix wc (word count) command-line tool, named ccwc (Coding Challenges word count). It guides you through incrementally building features like counting bytes, lines, words, and characters, as well as handling default options and input from standard input (stdin). This exercise emphasizes Unix philosophies of creating simple, interconnected tools and provides practical experience in command-line interface (CLI) development.
