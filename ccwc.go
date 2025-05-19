@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"os"
 )
@@ -22,22 +23,34 @@ func parse_dots(input_string string) [2][]byte {
 	return filename_parse
 }
 
-func read_file(filename string) int {
-	dat, err := os.ReadFile(filename)
+func read_bytes(filename string) uint64 {
+	file, err := os.Open(filename)
 
 	if err != nil {
 		panic(err)
 	}
+	defer file.Close()
 
-	return len(dat)
-}
+	scanner := bufio.NewScanner(file)
 
-func compute_bytes() {
+	var bytes uint64 = 0
 
+	for scanner.Scan() {
+		line := scanner.Text()
+		bytes += (uint64(len(line)) + 1)
+	}
+
+	return bytes
 }
 
 func parse_input() {
 	input_args := os.Args
+
+	if len(input_args) < 2 {
+		fmt.Println("ERRRO: No file provided")
+		return
+	}
+
 	file := input_args[len(input_args)-1]
 
 	// Check if file is `txt`
@@ -56,7 +69,7 @@ func parse_input() {
 		if input_args[flag][1] != 'c' {
 			fmt.Println("Invalid flag")
 		}
-
+		fmt.Println(read_bytes(file))
 	}
 }
 
