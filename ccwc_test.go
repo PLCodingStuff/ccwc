@@ -6,7 +6,7 @@ import (
 
 const test_file string = "test.txt"
 
-func Testbyte_count(t *testing.T) {
+func TestByteCount(t *testing.T) {
 	const expected_result uint64 = 342190
 	result := read_bytes(test_file)
 	if result != expected_result {
