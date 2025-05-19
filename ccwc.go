@@ -31,13 +31,21 @@ func read_bytes(filename string) uint64 {
 	}
 	defer file.Close()
 
-	scanner := bufio.NewScanner(file)
+	reader := bufio.NewReader(file)
 
 	var bytes uint64 = 0
 
-	for scanner.Scan() {
-		line := scanner.Text()
-		bytes += (uint64(len(line)) + 1)
+	for {
+		line, err := reader.ReadBytes('\n')
+		if err != nil {
+
+			if err.Error() == "EOF" {
+				break
+			}
+			panic(err)
+		}
+
+		bytes += uint64(len(line))
 	}
 
 	return bytes
