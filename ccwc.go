@@ -4,7 +4,9 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"log"
 	"os"
+	"slices"
 	"strings"
 	"unicode"
 )
@@ -16,180 +18,23 @@ type statistics struct {
 	chars uint64
 }
 
-// func parse_dots(input_string string) [2][]byte {
-// 	var filename_parse [2][]byte
-// 	var word uint8 = 0
-// 	char := 0
-
-// 	for input_char := range len(input_string) {
-// 		filename_parse[word] = append(filename_parse[word], input_string[input_char])
-// 		if input_string[input_char] == 46 {
-// 			word++
-// 			char = 0
-// 		}
-// 		char++
-// 	}
-
-// 	return filename_parse
-// }
-
-/*
-func read_bytes(filename string) uint64 {
-	file, err := os.Open(filename)
-
-	if err != nil {
-		panic(err)
-	}
-	defer file.Close()
-
-	reader := bufio.NewReader(file)
-
-	var bytes uint64
-
-	for {
-		_, r_size, err := reader.ReadRune()
+func input_reader(filename string) *os.File {
+	if filename != "stdin" {
+		file, err := os.Open(filename)
 		if err != nil {
-			if err.Error() == "EOF" {
-				break
-			}
-			panic(err)
+			log.Fatal(err)
 		}
-
-		bytes += uint64(r_size)
-	}
-
-	return bytes
-
-}
-
-func read_lines(filename string) uint64 {
-	file, err := os.Open(filename)
-
-	if err != nil {
-		panic(err)
-	}
-	defer file.Close()
-
-	reader := bufio.NewReader(file)
-
-	var lines uint64
-
-	for {
-		r, _, err := reader.ReadRune()
-		if err != nil {
-			if err.Error() == "EOF" {
-				break
-			}
-			panic(err)
-		}
-
-		if r == '\n' {
-			lines++
-		}
-	}
-
-	// Case only one line
-	if lines == 0 {
-		lines++
-	}
-
-	return lines
-}
-
-func split_words_seq(s string, sep []byte) iter.Seq[string] {
-	return func(yield func(string) bool) {
-		var start, s_length uint64 = 0, uint64(len(s))
-
-		for c := range s_length + 1 {
-			if (c == s_length || slices.Contains(sep, s[c])) && s[start:c] != "" {
-				if !yield(s[start:c]) {
-					return
-				}
-				start = uint64(c + 1)
-			}
-		}
+		return file
+	} else {
+		return os.Stdin
 	}
 }
-
-func read_words(filename string) uint64 {
-	file, err := os.Open(filename)
-
-	if err != nil {
-		panic(err)
-	}
-	defer file.Close()
-
-	reader := bufio.NewReader(file)
-
-	var words uint64
-	var prev_r, l_space rune
-
-	for {
-		r, _, err := reader.ReadRune()
-
-		if err != nil {
-			if err.Error() == "EOF" {
-				if prev_r != rune(0) && !unicode.IsSpace(prev_r) {
-					words++
-				}
-				break
-			}
-			panic(err)
-		}
-
-		// Check for trailing left whitespace characters
-		if l_space == rune(0) || unicode.IsSpace(l_space) {
-			l_space = r
-			prev_r = r
-			continue
-		}
-
-		if !unicode.IsSpace(prev_r) && unicode.IsSpace(r) {
-			words++
-		}
-
-		prev_r = r
-	}
-
-	return words
-}
-
-func read_chars(filename string) uint64 {
-	file, err := os.Open(filename)
-
-	if err != nil {
-		panic(err)
-	}
-	defer file.Close()
-
-	reader := bufio.NewReader(file)
-	var runes uint64
-	for {
-		_, _, err = reader.ReadRune()
-
-		if err != nil {
-			if err.Error() == "EOF" {
-				break
-			}
-			panic(err)
-		}
-
-		runes++
-	}
-
-	return runes
-}
-*/
 
 func count_stats(filename string) statistics {
 	var stats statistics
 	var prev_r, l_space rune
 
-	file, err := os.Open(filename)
-
-	if err != nil {
-		panic(err)
-	}
+	file := input_reader(filename)
 	defer file.Close()
 
 	reader := bufio.NewReader(file)
@@ -203,7 +48,7 @@ func count_stats(filename string) statistics {
 				}
 				break
 			}
-			panic(err)
+			log.Fatal(err)
 		}
 
 		if r == '\n' {
@@ -227,95 +72,138 @@ func count_stats(filename string) statistics {
 		prev_r = r
 	}
 
-	// // Case only one line
-	// if stats.lines == 0 {
-	// 	stats.lines++
-	// }
 	return stats
 }
 
-func parse_input() ([]string, [][]byte, error) {
-	input_args := os.Args
-
-	if len(input_args) < 2 {
-		return nil, nil, errors.New("No arguments provided")
+func validate_flag(flag string) (bool, error) {
+	if len(flag) < 2 {
+		return false, errors.New("invalid argument \"" + flag + "\"")
 	}
 
+	var inner_validate func(string) bool
+	inner_validate = func(flag string) bool {
+		if len(flag) == 0 {
+			return true
+		}
+		switch flag[0] {
+		case 'c', 'l', 'm', 'w':
+			return inner_validate(flag[1:])
+		}
+		return false
+	}
+
+	return inner_validate(flag[1:]), nil
+}
+
+func parse_flag(flag string, flags [4]bool) ([4]bool, error) {
+	updated_flags := flags
+	is_val, err := validate_flag(flag)
+
+	if err != nil {
+		return [4]bool{}, err
+	}
+
+	if !is_val {
+		return [4]bool{}, errors.New("unkown option \"" + flag + "\"")
+	}
+
+	for _, f := range flag[1:] {
+		switch f {
+		case 'c':
+			updated_flags[0] = true
+		case 'l':
+			updated_flags[1] = true
+		case 'w':
+			updated_flags[2] = true
+		case 'm':
+			updated_flags[3] = true
+		}
+	}
+	return updated_flags, nil
+}
+
+func parse_files_and_flags(input_args []string) ([]string, [4]bool, error) {
 	var files []string
-	var flags [][]byte
+	flags := [4]bool{false, false, false, false}
+	initial_setup := true
 
 	// Parse cli args
-	for arg := 1; arg < len(input_args); arg++ {
-		// Case input arg is file
-		if input_args[arg][0] != 45 {
-			files = append(files, input_args[arg])
+	for _, arg := range input_args[1:] {
+		if arg[0] != '-' {
+			if !slices.Contains(files, arg) {
+				files = append(files, arg)
+			}
 		} else {
-			flags = append(flags, []byte(input_args[arg]))
+			initial_setup = false
+
+			var err error
+			flags, err = parse_flag(arg, flags)
+
+			if err != nil {
+				return nil, [4]bool{}, err
+			}
 		}
 	}
 
+	if initial_setup {
+		flags[0] = true
+		flags[1] = true
+		flags[2] = true
+		flags[3] = false
+	}
 	if len(files) == 0 {
-		return nil, nil, errors.New("No files provided")
+		files = append(files, "stdin")
 	}
 
 	return files, flags, nil
 }
 
-func format_result_string(stats statistics, file string, l bool, w bool, c bool, m bool) string {
+func format_result_string(stats statistics, file string, flags [4]bool) string {
 	var sb strings.Builder
 
-	if l {
-		fmt.Fprintf(&sb, "%d ", stats.lines)
+	if flags[1] {
+		sb.WriteString(fmt.Sprintf("%7d", stats.lines))
 	}
-	if w {
-		fmt.Fprintf(&sb, "%d ", stats.words)
+	if flags[2] {
+		sb.WriteString(fmt.Sprintf("%7d", stats.words))
 	}
-	if c {
-		fmt.Fprintf(&sb, "%d ", stats.bytes)
+	if flags[3] {
+		sb.WriteString(fmt.Sprintf("%7d", stats.chars))
 	}
-	if m {
-		fmt.Fprintf(&sb, "%d ", stats.chars)
+	if flags[0] {
+		sb.WriteString(fmt.Sprintf("%7d", stats.bytes))
 	}
-	if !(c || l || w || m) {
-		fmt.Fprintf(&sb, "%d ", stats.lines)
-		fmt.Fprintf(&sb, "%d ", stats.words)
-		fmt.Fprintf(&sb, "%d ", stats.bytes)
+	if !(flags[0] || flags[1] || flags[2] || flags[3]) {
+		sb.WriteString(fmt.Sprintf("%7d", stats.lines))
+		sb.WriteString(fmt.Sprintf("%7d", stats.words))
+		sb.WriteString(fmt.Sprintf("%7d", stats.bytes))
 	}
-	sb.WriteString(" " + file + "\n")
+	if file != "stdin" {
+		sb.WriteString(" " + file)
+	}
+	sb.WriteRune('\n')
 
 	return sb.String()
 }
 
-func compute_stats(file string, flags [][]byte) string {
-	var print_c, print_l, print_w, print_m bool = false, false, false, false
-	stats := count_stats(file)
-
-	for _, flag := range flags {
-		for _, char := range flag {
-			switch char {
-			case 'c':
-				print_c = true
-			case 'l':
-				print_l = true
-			case 'w':
-				print_w = true
-			case 'm':
-				print_m = true
-			default:
-			}
-		}
-	}
-
-	return format_result_string(stats, file, print_l, print_w, print_c, print_m)
-}
-
 func main() {
-	files, flags, err := parse_input()
-
+	var total_stats statistics
+	files, flags, err := parse_files_and_flags(os.Args)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
+
 	for _, file := range files {
-		fmt.Print(compute_stats(file, flags))
+		stats := count_stats(file)
+		fmt.Print(format_result_string(stats, file, flags))
+
+		total_stats.bytes += stats.bytes
+		total_stats.chars += stats.chars
+		total_stats.lines += stats.lines
+		total_stats.words += stats.words
+	}
+
+	if len(files) > 1 {
+		fmt.Print(format_result_string(total_stats, "total", flags))
 	}
 }
