@@ -6,7 +6,7 @@
 1. Clone the project from GitHub:
    ```bash
    git clone https://github.com/PLCodingStuff/ccwc.git
-   cd ccwc.git
+   cd ccwc
    ```
 2. Ensure that dependencies are synced:
    ```bash
