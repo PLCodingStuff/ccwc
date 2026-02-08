@@ -67,24 +67,24 @@ func TestCountStats(t *testing.T) {
 				sb.WriteString("\") FAIL: expected result:")
 
 				sb.WriteString("\n\t\tbytes: ")
-				sb.WriteString(fmt.Sprintf("%d", result.bytes))
-				sb.WriteString(", got ")
 				sb.WriteString(fmt.Sprintf("%d", tc.stats.bytes))
+				sb.WriteString(", got ")
+				sb.WriteString(fmt.Sprintf("%d", result.bytes))
 
 				sb.WriteString("\n\t\tlines: ")
-				sb.WriteString(fmt.Sprintf("%d", result.lines))
-				sb.WriteString(", got ")
 				sb.WriteString(fmt.Sprintf("%d", tc.stats.lines))
+				sb.WriteString(", got ")
+				sb.WriteString(fmt.Sprintf("%d", result.lines))
 
 				sb.WriteString("\n\t\twords: ")
-				sb.WriteString(fmt.Sprintf("%d", result.words))
-				sb.WriteString(", got ")
 				sb.WriteString(fmt.Sprintf("%d", tc.stats.words))
+				sb.WriteString(", got ")
+				sb.WriteString(fmt.Sprintf("%d", result.words))
 
 				sb.WriteString("\n\t\tchars: ")
-				sb.WriteString(fmt.Sprintf("%d", result.chars))
-				sb.WriteString(", got ")
 				sb.WriteString(fmt.Sprintf("%d\n", tc.stats.chars))
+				sb.WriteString(", got ")
+				sb.WriteString(fmt.Sprintf("%d", result.chars))
 				t.Error(sb.String())
 			}
 		})
