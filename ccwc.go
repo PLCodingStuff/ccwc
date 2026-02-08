@@ -19,15 +19,11 @@ type statistics struct {
 }
 
 func input_reader(filename string) *os.File {
-	if filename != "stdin" {
-		file, err := os.Open(filename)
-		if err != nil {
-			log.Fatal(err)
-		}
-		return file
-	} else {
-		return os.Stdin
+	file, err := os.Open(filename)
+	if err != nil {
+		log.Fatal(err)
 	}
+	return file
 }
 
 func count_stats(filename string) statistics {
@@ -35,7 +31,12 @@ func count_stats(filename string) statistics {
 	var prev_r, l_space rune
 
 	file := input_reader(filename)
-	defer file.Close()
+	defer func() {
+		err := file.Close()
+		if err != nil {
+			log.Fatal(err)
+		}
+	}()
 
 	reader := bufio.NewReader(file)
 
@@ -124,6 +125,7 @@ func parse_flag(flag string, flags [4]bool) ([4]bool, error) {
 
 func parse_files_and_flags(input_args []string) ([]string, [4]bool, error) {
 	var files []string
+	var err error
 	flags := [4]bool{false, false, false, false}
 	initial_setup := true
 
@@ -136,7 +138,6 @@ func parse_files_and_flags(input_args []string) ([]string, [4]bool, error) {
 		} else {
 			initial_setup = false
 
-			var err error
 			flags, err = parse_flag(arg, flags)
 
 			if err != nil {
@@ -152,7 +153,8 @@ func parse_files_and_flags(input_args []string) ([]string, [4]bool, error) {
 		flags[3] = false
 	}
 	if len(files) == 0 {
-		files = append(files, "stdin")
+		err = errors.New("no file provided")
+		return nil, [4]bool{}, err
 	}
 
 	return files, flags, nil
@@ -173,7 +175,7 @@ func format_result_string(stats statistics, file string, flags [4]bool) string {
 	if flags[0] {
 		sb.WriteString(fmt.Sprintf("%7d", stats.bytes))
 	}
-	if !(flags[0] || flags[1] || flags[2] || flags[3]) {
+	if flags[0] && flags[1] && flags[2] && flags[3] {
 		sb.WriteString(fmt.Sprintf("%7d", stats.lines))
 		sb.WriteString(fmt.Sprintf("%7d", stats.words))
 		sb.WriteString(fmt.Sprintf("%7d", stats.bytes))
