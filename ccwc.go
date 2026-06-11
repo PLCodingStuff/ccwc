@@ -28,7 +28,7 @@ func input_reader(filename string) *os.File {
 
 func count_stats(filename string) statistics {
 	var stats statistics
-	var prev_r, l_space rune
+	var inWord bool
 
 	file := input_reader(filename)
 	defer func() {
@@ -44,33 +44,24 @@ func count_stats(filename string) statistics {
 		r, r_size, err := reader.ReadRune()
 		if err != nil {
 			if err.Error() == "EOF" {
-				if prev_r != rune(0) && !unicode.IsSpace(prev_r) {
-					stats.words++
-				}
 				break
 			}
 			log.Fatal(err)
 		}
 
+		stats.bytes += uint64(r_size)
+		stats.chars++
+
 		if r == '\n' {
 			stats.lines++
 		}
 
-		stats.bytes += uint64(r_size)
-		stats.chars++
-
-		// Check for trailing left whitespace characters
-		if l_space == rune(0) || unicode.IsSpace(l_space) {
-			l_space = r
-			prev_r = r
-			continue
-		}
-
-		if !unicode.IsSpace(prev_r) && unicode.IsSpace(r) {
+		if unicode.IsSpace(r) {
+			inWord = false
+		} else if !inWord {
 			stats.words++
+			inWord = true
 		}
-
-		prev_r = r
 	}
 
 	return stats
